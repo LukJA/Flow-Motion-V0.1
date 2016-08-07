@@ -36,15 +36,16 @@ int main(void)
 	
 	for (;;)
 	{
-		if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7))
-		{
-			uint8_t INT1 = LISREAD(INT1_SRC);
-			uint8_t CLICKS = LISREAD(CLICK_SRC);
-			
-			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
-			HAL_Delay(200);
-			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
-		}
+		// enter stop mode - exit by any EXTI
+		HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI);
+		
+		// clear the interrupts
+		uint8_t INT1 = LISREAD(INT1_SRC);
+		uint8_t CLICKS = LISREAD(CLICK_SRC);
+		
+		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
+		HAL_Delay(200);
+		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
 		
 	}
 }
@@ -147,13 +148,21 @@ void LIS_INIT(void)
 
 	GPIO_InitStructure.Pin = GPIO_PIN_7;
 
-	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
 	GPIO_InitStructure.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 	
+	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 1);
+	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+	
 	// -------------------------------------------------------------
 	
+}
+
+extern "C" void EXTI9_5_IRQHandler()
+{
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);				
 }
 
 void LISCMD(uint8_t registerAddr, uint8_t cmmd)
