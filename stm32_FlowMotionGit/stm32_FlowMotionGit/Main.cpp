@@ -22,7 +22,7 @@ signed int lis_get_axis(int);
 I2C_HandleTypeDef I2C_InitStructure; //global
 
 
-void SysTick_Handler(void)
+extern "C" void SysTick_Handler(void)
 {
 	HAL_IncTick();
 	HAL_SYSTICK_IRQHandler();
@@ -31,9 +31,10 @@ void SysTick_Handler(void)
 int main(void)
 {
 	HAL_Init();
+	LED_INIT();
 	LIS_INIT();
 	
-		for (;;)
+	for (;;)
 	{
 		if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7))
 		{
@@ -41,9 +42,8 @@ int main(void)
 			uint8_t CLICKS = LISREAD(CLICK_SRC);
 			
 			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
-			HAL_Delay(500);
+			HAL_Delay(200);
 			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
-			HAL_Delay(500);
 		}
 		
 	}
@@ -98,7 +98,7 @@ void LIS_INIT(void)
 	
 	HAL_I2C_Init(&I2C_InitStructure);
 	//lets see if the lis is online
-	HAL_StatusTypeDef x = HAL_I2C_IsDeviceReady(&I2C_InitStructure, 0B00110000, 3, 1000);
+	HAL_StatusTypeDef x = HAL_I2C_IsDeviceReady(&I2C_InitStructure, 0B00110000, 3, 10);
 	
 	
 	//cool lets set it up --------------------------------
@@ -128,7 +128,7 @@ void LIS_INIT(void)
 	// Adjust this number for the sensitivity of the 'click' force
 	// this strongly depend on the range! for 16G, try 5-10
 	// for 8G, try 10-20. for 4G try 20-40. for 2G try 40-80
-	#define CLICKTHRESHHOLD 20
+	#define CLICKTHRESHHOLD 80
 	// timing params in units of ODR sample rate
 	#define TIMELIMIT 10
 	#define TIMELATENCY 20
@@ -159,15 +159,15 @@ void LIS_INIT(void)
 void LISCMD(uint8_t registerAddr, uint8_t cmmd)
 {
 	uint8_t toSend[2] = { registerAddr, cmmd }; //create command data
-	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend[0], 2, 1000); //send to LIS
+	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend[0], 2, 10); //send to LIS
 }
 
 uint8_t LISREAD(uint8_t registerAddr)
 {
 	uint8_t toSend = registerAddr;
 	uint8_t toRead;
-	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend, 1, 1000); //send to LIS
-	HAL_I2C_Master_Receive(&I2C_InitStructure, LIS3DH_ADDR << 1, &toRead, 1, 1000); // receive
+	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend, 1, 10); //send to LIS
+	HAL_I2C_Master_Receive(&I2C_InitStructure, LIS3DH_ADDR << 1, &toRead, 1, 10); // receive
 	return toRead;
 }
 
