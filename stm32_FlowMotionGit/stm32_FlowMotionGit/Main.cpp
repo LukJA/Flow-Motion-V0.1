@@ -1,4 +1,5 @@
 #include <stm32f4xx_hal.h>
+#include "defines.h"
 //------------------------------------------------------------------------
 //FlowMotion V0.1 firmware --
 //To do=
@@ -11,24 +12,13 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-	
-#define R_LED_PIN GPIO_PIN_1
-#define G_LED_PIN GPIO_PIN_2
-#define B_LED_PIN GPIO_PIN_3
-#define LED_PORT GPIOA
 
 void LIS_INIT(void);
 void LED_INIT(void);
+void LISCMD(uint8_t, uint8_t);
+uint8_t LISREAD(uint8_t);
 
 signed int lis_get_axis(int);
-#define X_AXIS 0x1
-#define Y_AXIS 0x2
-#define Z_AXIS 0x3
-#define INT1_PIN GPIO_PIN_7
-#define INT1_PORT GPIOB
-
-
-#define LIS3DH_ADDR							0B0011000
 I2C_HandleTypeDef I2C_InitStructure; //global
 
 
@@ -43,15 +33,19 @@ int main(void)
 	HAL_Init();
 	LIS_INIT();
 	
-	
-
-	for (;;)
+		for (;;)
 	{
-		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
-		HAL_Delay(500);
-		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
-		HAL_Delay(500);
-		HAL_Delay(240);
+		if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7))
+		{
+			uint8_t INT1 = LISREAD(INT1_SRC);
+			uint8_t CLICKS = LISREAD(CLICK_SRC);
+			
+			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
+			HAL_Delay(500);
+			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
+			HAL_Delay(500);
+		}
+		
 	}
 }
 
@@ -105,28 +99,76 @@ void LIS_INIT(void)
 	HAL_I2C_Init(&I2C_InitStructure);
 	//lets see if the lis is online
 	HAL_StatusTypeDef x = HAL_I2C_IsDeviceReady(&I2C_InitStructure, 0B00110000, 3, 1000);
-	//cool lets set it up
 	
-	// enable all axes, normal mode
-	// 400Hz rate
-	uint8_t data[2] = { 0x20, 0x98 };
-	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &data[0], 2, 1000);
 	
-	// High res & BDU enabled
-	uint8_t a[2] = { 0x23, 0x98 };
-	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &a[0], 2, 1000);
-
-	// DRDY on INT1
-	uint8_t b[2] = { 0x22, 0x10 };
-	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &b[0], 2, 1000);
-
-	// Turn on orientation config
-	//writeRegister8(LIS3DH_REG_PL_CFG, 0x40);
-
-	// enable adcs
-	uint8_t c[2] = { 0x1f, 0x80 };
-	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &c[0], 2, 1000);
+	//cool lets set it up --------------------------------
 	
+	// enable all axes, normal mode 1.25KHz rate
+	// ~ 10010111 
+	LISCMD(CTRL_REG1, 0x97);
+	
+	// Turn on INT1 click
+	// ~ 10000000
+	LISCMD(CTRL_REG3, 0x80);
+	
+	// High res, 4G+- & BDU enabled
+	// ~ 10011000
+	LISCMD(CTRL_REG4, 0x98);
+	
+	// latch interupt on INT1 (Cleared by reading INT1SRC)
+	// ~ 00001000
+	LISCMD(CTRL_REG5, 0x08);
+	
+	// turn on all axes & doubletap detection
+	// ~ 00101010
+	LISCMD(CLICK_CFG, 0x2A); 
+	
+	// set parameters for detection ----
+	
+	// Adjust this number for the sensitivity of the 'click' force
+	// this strongly depend on the range! for 16G, try 5-10
+	// for 8G, try 10-20. for 4G try 20-40. for 2G try 40-80
+	#define CLICKTHRESHHOLD 20
+	// timing params in units of ODR sample rate
+	#define TIMELIMIT 10
+	#define TIMELATENCY 20
+	#define TIMEWINDOW 255
+	
+	LISCMD(CLICK_THS, CLICKTHRESHHOLD); // arbitrary
+	LISCMD(TIME_LIMIT, TIMELIMIT); // arbitrary
+	LISCMD(TIME_LATENCY, TIMELATENCY); // arbitrary
+	LISCMD(TIME_WINDOW, TIMEWINDOW); // arbitrary
+	
+	// -------------
+	
+	// GPIO setup for INT1 input: (PB7)
+	__GPIOB_CLK_ENABLE();
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	GPIO_InitStructure.Pin = GPIO_PIN_7;
+
+	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
+	GPIO_InitStructure.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	// -------------------------------------------------------------
+	
+}
+
+void LISCMD(uint8_t registerAddr, uint8_t cmmd)
+{
+	uint8_t toSend[2] = { registerAddr, cmmd }; //create command data
+	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend[0], 2, 1000); //send to LIS
+}
+
+uint8_t LISREAD(uint8_t registerAddr)
+{
+	uint8_t toSend = registerAddr;
+	uint8_t toRead;
+	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend, 1, 1000); //send to LIS
+	HAL_I2C_Master_Receive(&I2C_InitStructure, LIS3DH_ADDR << 1, &toRead, 1, 1000); // receive
+	return toRead;
 }
 
 signed int lis_get_axis(int axis)
