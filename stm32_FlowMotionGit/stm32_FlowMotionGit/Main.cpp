@@ -21,6 +21,10 @@ uint8_t LISREAD(uint8_t);
 signed int lis_get_axis(int);
 I2C_HandleTypeDef I2C_InitStructure; //global
 
+TIM_HandleTypeDef PWMTimer; //global
+
+bool RECORDING = false;
+
 
 extern "C" void SysTick_Handler(void)
 {
@@ -37,7 +41,9 @@ int main(void)
 	for (;;)
 	{
 		// enter stop mode - exit by any EXTI
-		HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI);
+		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk; // disable systick
+		HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI); //stop
+		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk; // enable systick
 		
 		// clear the interrupts
 		uint8_t INT1 = LISREAD(INT1_SRC);
@@ -47,6 +53,18 @@ int main(void)
 		HAL_Delay(200);
 		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
 		
+		HAL_TIM_PWM_Start(&PWMTimer, TIM_CHANNEL_4);
+		
+		while (RECORDING)
+		{
+			
+		}
+		
+		HAL_TIM_PWM_Stop(&PWMTimer, TIM_CHANNEL_4);
+		
+		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
+		HAL_Delay(200);
+		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
 	}
 }
 
@@ -55,7 +73,7 @@ int main(void)
 
 void LED_INIT(void)
 {
-	//** Initializes GPIO for LED pins
+	//** Initializes GPIO for Green LED
 	__GPIOA_CLK_ENABLE();
 	GPIO_InitTypeDef GPIO_InitStructure;
 
@@ -65,6 +83,49 @@ void LED_INIT(void)
 	GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
 	GPIO_InitStructure.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(LED_PORT, &GPIO_InitStructure);
+	
+	
+	
+	
+	
+	
+	//** Initializes PWM for (blue) red LED
+	// Init Timer 2
+	__TIM2_CLK_ENABLE();
+	
+	PWMTimer.Init.Period = 500;
+	PWMTimer.Init.Prescaler = 40000;
+	PWMTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
+	PWMTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+	PWMTimer.Instance = TIM2;
+
+	HAL_TIM_PWM_Init(&PWMTimer);
+	
+	// init compare regs
+	TIM_OC_InitTypeDef sConfig;
+	
+	sConfig.OCMode     = TIM_OCMODE_PWM1;
+	sConfig.OCPolarity = TIM_OCPOLARITY_HIGH;
+	sConfig.OCFastMode = TIM_OCFAST_DISABLE;
+	sConfig.Pulse = 100;
+	
+	HAL_TIM_PWM_ConfigChannel(&PWMTimer, &sConfig, TIM_CHANNEL_4);
+	__HAL_TIM_ENABLE(&PWMTimer);
+	
+	// init GPIO
+	__GPIOA_CLK_ENABLE();
+	GPIO_InitTypeDef GPIO_Init;
+
+	GPIO_Init.Pin = B_LED_PIN;
+	GPIO_Init.Mode = GPIO_MODE_AF_PP;
+	GPIO_Init.Speed = GPIO_SPEED_HIGH;
+	GPIO_Init.Pull = GPIO_NOPULL;
+	GPIO_Init.Alternate = GPIO_AF1_TIM2;
+	GPIOA->AFR[0] |= 0x00001000;
+	
+	HAL_GPIO_Init(LED_PORT, &GPIO_Init);
+	
+	//start PWM
 }
 
 void LIS_INIT(void)
@@ -150,11 +211,13 @@ void LIS_INIT(void)
 
 	GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStructure.Speed = GPIO_SPEED_HIGH;
-	GPIO_InitStructure.Pull = GPIO_NOPULL;
+	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 	
 	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 1);
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+	
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
 	
 	// -------------------------------------------------------------
 	
@@ -162,7 +225,9 @@ void LIS_INIT(void)
 
 extern "C" void EXTI9_5_IRQHandler()
 {
-	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);				
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+	uint8_t x = 0xF;
+	RECORDING = !RECORDING;
 }
 
 void LISCMD(uint8_t registerAddr, uint8_t cmmd)
