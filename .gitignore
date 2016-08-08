@@ -6,9 +6,13 @@
 *.user
 *.userosscache
 *.sln.docstates
+
 *.VC.db
 *.VC.opendb
-*.codedb.lck
+
+**/GlobalFileTable.000
+**/GlobalFileTable.001
+**/codedb.lck
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
