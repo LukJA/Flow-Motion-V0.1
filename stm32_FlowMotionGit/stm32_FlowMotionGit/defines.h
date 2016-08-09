@@ -1,5 +1,7 @@
 #pragma once
 
+#define STM32F4xx
+
 #define CTRL_REG1 0x20
 #define CTRL_REG2 0x21
 #define CTRL_REG3 0x22

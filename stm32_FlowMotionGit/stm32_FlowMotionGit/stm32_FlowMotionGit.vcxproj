@@ -127,8 +127,22 @@
     <ClCompile Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\STM32F4xx_HAL_Driver\Src\stm32f4xx_ll_fsmc.c" />
     <ClCompile Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\STM32F4xx_HAL_Driver\Src\stm32f4xx_ll_sdmmc.c" />
     <ClCompile Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\STM32F4xx_HAL_Driver\Src\stm32f4xx_ll_usb.c" />
+    <ClCompile Include="ccsbcs.c" />
+    <ClCompile Include="diskio.c" />
+    <ClCompile Include="fatfs_sd.c" />
+    <ClCompile Include="ff.c" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="syscall.c" />
     <ClCompile Include="system_stm32f4xx.c" />
+    <ClCompile Include="tm_stm32_buffer.c" />
+    <ClCompile Include="tm_stm32_delay.c" />
+    <ClCompile Include="tm_stm32_dma.c" />
+    <ClCompile Include="tm_stm32_fatfs.c" />
+    <ClCompile Include="tm_stm32_gpio.c" />
+    <ClCompile Include="tm_stm32_rcc.c" />
+    <ClCompile Include="tm_stm32_spi.c" />
+    <ClCompile Include="tm_stm32_spi_dma.c" />
+    <ClCompile Include="unicode.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\CMSIS_HAL\Device\ST\STM32F4xx\Include\stm32f4xx.h" />
@@ -213,8 +227,23 @@
     <ClInclude Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\STM32F4xx_HAL_Driver\Inc\stm32f4xx_ll_fsmc.h" />
     <ClInclude Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\STM32F4xx_HAL_Driver\Inc\stm32f4xx_ll_sdmmc.h" />
     <ClInclude Include="..\..\..\..\..\AppData\Local\VisualGDB\EmbeddedBSPs\arm-eabi\com.sysprogs.arm.stm32\STM32F4xxxx\STM32F4xx_HAL_Driver\Inc\stm32f4xx_ll_usb.h" />
+    <ClInclude Include="attributes.h" />
     <ClInclude Include="defines.h" />
+    <ClInclude Include="diskio.h" />
+    <ClInclude Include="fatfs_sd.h" />
+    <ClInclude Include="ff.h" />
+    <ClInclude Include="ffconf.h" />
+    <ClInclude Include="integer.h" />
     <ClInclude Include="stm32f4xx_hal_conf.h" />
+    <ClInclude Include="stm32fxxx_hal.h" />
+    <ClInclude Include="tm_stm32_buffer.h" />
+    <ClInclude Include="tm_stm32_delay.h" />
+    <ClInclude Include="tm_stm32_dma.h" />
+    <ClInclude Include="tm_stm32_fatfs.h" />
+    <ClInclude Include="tm_stm32_gpio.h" />
+    <ClInclude Include="tm_stm32_rcc.h" />
+    <ClInclude Include="tm_stm32_spi.h" />
+    <ClInclude Include="tm_stm32_spi_dma.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="debug.mak" />

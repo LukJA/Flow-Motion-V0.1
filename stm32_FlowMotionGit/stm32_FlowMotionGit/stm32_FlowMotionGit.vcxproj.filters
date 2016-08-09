@@ -32,6 +32,18 @@
     <Filter Include="NewFilter1">
       <UniqueIdentifier>{d8aaa474-ef59-41da-9696-35cd335cf5f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header files\TM Libraries">
+      <UniqueIdentifier>{602efeef-f99a-4dac-8548-d0a652cb0219}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header files\FATFS Misc">
+      <UniqueIdentifier>{d3086879-fa21-46de-abfe-a005c6321078}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source files\TM Libraries">
+      <UniqueIdentifier>{e3cd7cb9-d226-4e3d-8ffa-b080b6d9a2cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source files\FATFS Misc">
+      <UniqueIdentifier>{50d5e6cf-d8fa-41b3-8ad4-2ff37b4c73c6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="system_stm32f4xx.c">
@@ -231,6 +243,48 @@
     </ClCompile>
     <ClCompile Include="Main.cpp">
       <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_delay.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_fatfs.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="ccsbcs.c">
+      <Filter>Source files\FATFS Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="diskio.c">
+      <Filter>Source files\FATFS Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="fatfs_sd.c">
+      <Filter>Source files\FATFS Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="ff.c">
+      <Filter>Source files\FATFS Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall.c">
+      <Filter>Source files\FATFS Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="unicode.c">
+      <Filter>Source files\FATFS Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_spi_dma.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_buffer.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_gpio.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_rcc.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_spi.c">
+      <Filter>Source files\TM Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="tm_stm32_dma.c">
+      <Filter>Source files\TM Libraries</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -485,6 +539,51 @@
     </ClInclude>
     <ClInclude Include="defines.h">
       <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_delay.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_fatfs.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="attributes.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="ff.h">
+      <Filter>Header files\FATFS Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="integer.h">
+      <Filter>Header files\FATFS Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="fatfs_sd.h">
+      <Filter>Header files\FATFS Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="diskio.h">
+      <Filter>Header files\FATFS Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ffconf.h">
+      <Filter>Header files\FATFS Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="stm32fxxx_hal.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_spi_dma.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_buffer.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_gpio.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_rcc.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_spi.h">
+      <Filter>Header files\TM Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tm_stm32_dma.h">
+      <Filter>Header files\TM Libraries</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
