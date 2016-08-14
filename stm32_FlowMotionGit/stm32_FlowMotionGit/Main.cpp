@@ -17,7 +17,8 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-
+	
+void RTC_INIT(void);
 void LIS_INIT(void);
 void LED_INIT(void);
 void LISCMD(uint8_t, uint8_t);
@@ -41,8 +42,6 @@ TM_FATFS_Size_t CardSize;
 /* Buffer variable */
 char buffer[100];
 
-void RecordLoop(void);
-
 
 extern "C" void SysTick_Handler(void)
 {
@@ -52,78 +51,80 @@ extern "C" void SysTick_Handler(void)
 
 int main(void)
 {
-	HAL_Init();
+	// Perform first time boot initiation of all hardware
+	HAL_Init(); 
 	LED_INIT();
 	LIS_INIT();
 	
 	for (;;)
 	{
-		// enter stop mode - exit by any EXTI
+		// enter low power stop mode - exit by any EXTI - disable systick to prevent exit
 		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk; // disable systick
 		HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI); //stop
 		SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk; // enable systick
 		
-		// clear the interrupts
+		
+		// clear the LIS internal interrupts by reading their registers
 		uint8_t INT1 = LISREAD(INT1_SRC);
 		uint8_t CLICKS = LISREAD(CLICK_SRC);
 		
-		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
-		HAL_Delay(200);
-		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
-		
-		HAL_TIM_PWM_Start(&PWMTimer, TIM_CHANNEL_4);
-		
-		int mounted = f_mount(&FS, "SD:", 1);
-		HAL_Delay(1);
-		
-		if (mounted == FR_OK) {
-			/* Try to open file */
-			HAL_Delay(1);
-			if ((fres = f_open(&fil, "SD:TELEMETRY2.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE)) == FR_OK) {
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-				/* Read SDCARD size */
-				TM_FATFS_GetDriveSize("SD:", &CardSize);
-            
-				/* Format string */
-				sprintf(buffer, "Total card size: %u kBytes\n", CardSize.Total);
-            
-				/* Write total card size to file */
-				//f_puts(buffer, &fil);
-            
-				/* Format string for free card size */
-				sprintf(buffer, "Free card size:  %u kBytes\n", CardSize.Free);
-            
-				/* Write free card size to file */
-				//f_puts(buffer, &fil);
-            
-				/* Close file */
-				
+	
+		//double check recording is in a know state
+		if (RECORDING)
+		{
 			
-			while (RECORDING)
-			{
-				
-				uint16_t XA = lis_get_axis(X_AXIS);
-				uint16_t YA = lis_get_axis(Y_AXIS);
-				uint16_t ZA = lis_get_axis(Z_AXIS);
-				
-				sprintf(buffer, " %u, %u, %u,\n", XA, YA, ZA);
-				f_puts(buffer, &fil);
-				
-				HAL_Delay(25);
-			}
-				
-			f_close(&fil);
-			}
-		}
+			// Blink the green Led to symbol recording start
+			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
+			HAL_Delay(200);
+			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
 		
-		HAL_TIM_PWM_Stop(&PWMTimer, TIM_CHANNEL_4);
 		
-		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
-		HAL_Delay(200);
-		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
-	}
-}
+			// Start recording light through hardware pwm
+			HAL_TIM_PWM_Start(&PWMTimer, TIM_CHANNEL_4);
+		
+		
+			// Mount SD with hardware code "SD" in force mode
+			if (f_mount(&FS, "SD:", 1) == FR_OK) {
+				// Open File to write
+				if ((fres = f_open(&fil, "SD:TELEMETRY2.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE)) == FR_OK) {
+							
+					while (RECORDING)
+					{
+						// get acceleration data
+						uint16_t XA = lis_get_axis(X_AXIS);
+						uint16_t YA = lis_get_axis(Y_AXIS);
+						uint16_t ZA = lis_get_axis(Z_AXIS);
+					
+						// format and write to SD in CSV
+						sprintf(buffer, " %u, %u, %u,\n", XA, YA, ZA);
+						f_puts(buffer, &fil);
+					
+						// Sample rate
+						HAL_Delay(25);
+					}
+					// Close the file
+					f_close(&fil);
+				}
+				// Unmount the SD
+				f_mount(NULL, "SD:", 0);
+			}
+		
+			// stop hardware PWM recording light
+			HAL_TIM_PWM_Stop(&PWMTimer, TIM_CHANNEL_4);
+		
+			// blink to specify end
+			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_SET);
+			HAL_Delay(200);
+			HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
+			
+		} // end if(RECORDING)
+	} // end for ;;
+} // end main
 
+void RTC_INIT(void)
+{
+	// Init the RTC hardware used in file timestamping and periodic system checks
+}
 
 void LED_INIT(void)
 {
@@ -138,11 +139,7 @@ void LED_INIT(void)
 	GPIO_InitStructure.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(LED_PORT, &GPIO_InitStructure);
 	
-	
-	
-	
-	
-	
+		
 	//** Initializes PWM for (blue) red LED
 	// Init Timer 2
 	__TIM2_CLK_ENABLE();
@@ -155,7 +152,7 @@ void LED_INIT(void)
 
 	HAL_TIM_PWM_Init(&PWMTimer);
 	
-	// init compare regs
+	// init compare registers for pwm
 	TIM_OC_InitTypeDef sConfig;
 	
 	sConfig.OCMode     = TIM_OCMODE_PWM1;
@@ -166,7 +163,7 @@ void LED_INIT(void)
 	HAL_TIM_PWM_ConfigChannel(&PWMTimer, &sConfig, TIM_CHANNEL_4);
 	__HAL_TIM_ENABLE(&PWMTimer);
 	
-	// init GPIO
+	// init GPIO for pwm
 	__GPIOA_CLK_ENABLE();
 	GPIO_InitTypeDef GPIO_Init;
 
@@ -178,8 +175,6 @@ void LED_INIT(void)
 	GPIOA->AFR[0] |= 0x00001000;
 	
 	HAL_GPIO_Init(LED_PORT, &GPIO_Init);
-	
-	//start PWM
 }
 
 void LIS_INIT(void)
@@ -279,6 +274,7 @@ void LIS_INIT(void)
 
 extern "C" void EXTI9_5_IRQHandler()
 {
+	// handler for tap - inverts recording bool
 	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
 	uint8_t x = 0xF;
 	RECORDING = !RECORDING;
@@ -286,12 +282,14 @@ extern "C" void EXTI9_5_IRQHandler()
 
 void LISCMD(uint8_t registerAddr, uint8_t cmmd)
 {
+	// send a register write to the LIS
 	uint8_t toSend[2] = { registerAddr, cmmd }; //create command data
 	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend[0], 2, 10); //send to LIS
 }
 
 uint8_t LISREAD(uint8_t registerAddr)
 {
+	// Get a register from the LIS
 	uint8_t toSend = registerAddr;
 	uint8_t toRead;
 	HAL_I2C_Master_Transmit(&I2C_InitStructure, LIS3DH_ADDR << 1, &toSend, 1, 10); //send to LIS
