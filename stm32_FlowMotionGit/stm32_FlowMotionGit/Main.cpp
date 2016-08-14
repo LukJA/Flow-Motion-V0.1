@@ -17,17 +17,20 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-	
-void RTC_INIT(void);
-void LIS_INIT(void);
+
 void LED_INIT(void);
+TIM_HandleTypeDef PWMTimer; //global
+
+void RTC_INIT(void);
+uint8_t RTC_DateTime(void);
+RTC_HandleTypeDef RTCconfig; // global
+ 
+void LIS_INIT(void);
 void LISCMD(uint8_t, uint8_t);
 uint8_t LISREAD(uint8_t);
-
 signed int lis_get_axis(int);
 I2C_HandleTypeDef I2C_InitStructure; //global
 
-TIM_HandleTypeDef PWMTimer; //global
 
 bool RECORDING = false;
 
@@ -124,6 +127,40 @@ int main(void)
 void RTC_INIT(void)
 {
 	// Init the RTC hardware used in file timestamping and periodic system checks
+	// default time and date (24H)
+	RTC_TimeTypeDef time;
+	RTC_DateTypeDef date;
+	time.Hours = 12;
+	time.Minutes = 0;
+	time.Seconds = 0;
+	time.SubSeconds = 0;
+	time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+	time.StoreOperation = RTC_STOREOPERATION_SET;
+	
+	date.Date = 1;
+	date.Month = RTC_MONTH_JANUARY;
+	date.Year = 00; //Y2K
+	date.WeekDay = RTC_WEEKDAY_SATURDAY;
+	
+	// enable PWR interface
+	__HAL_RCC_PWR_CLK_ENABLE();
+	// allow access to the backup domain (RTC is write protected)
+	HAL_PWR_EnableBkUpAccess();
+	// config RTC clock source NOTE: change to Low Speed External LSE
+	__HAL_RCC_RTC_CONFIG(RCC_RTCCLKSOURCE_LSI);
+	// enable the RTC clock
+	__HAL_RCC_RTC_ENABLE();
+	
+	// begin RTC initiation of clock dividers
+	RTCconfig.Init.HourFormat = RTC_HOURFORMAT_24;
+	RTCconfig.Init.AsynchPrediv = 124; // change to 127 for LSE
+	RTCconfig.Init.SynchPrediv = 295; // change to 255 for LSE
+	// insert into RTC init
+	HAL_RTC_Init(&RTCconfig);
+	
+	// Set RTC default values
+	HAL_RTC_SetTime(&RTCconfig, &time, RTC_FORMAT_BCD);
+	HAL_RTC_SetDate(&RTCconfig, &date, RTC_FORMAT_BCD);
 }
 
 void LED_INIT(void)
