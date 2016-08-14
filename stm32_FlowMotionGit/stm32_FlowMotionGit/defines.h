@@ -2,6 +2,13 @@
 
 #define STM32F4xx
 
+#define FATFS_USE_SDIO 0
+#define FATFS_SPI SPI1
+#define FATFS_SPI_PINSPACK TM_SPI_PinsPack_1
+
+#define FATFS_CS_PORT GPIOB
+#define FATFS_CS_PIN GPIO_PIN_5
+
 #define CTRL_REG1 0x20
 #define CTRL_REG2 0x21
 #define CTRL_REG3 0x22

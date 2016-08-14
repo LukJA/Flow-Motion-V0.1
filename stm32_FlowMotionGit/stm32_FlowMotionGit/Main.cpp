@@ -1,5 +1,10 @@
 #include <stm32f4xx_hal.h>
+#include "stm32fxxx_hal.h"
 #include "defines.h"
+
+#include "tm_stm32_fatfs.h"
+#include "tm_stm32_delay.h"
+
 //------------------------------------------------------------------------
 //FlowMotion V0.1 firmware --
 //To do=
@@ -24,6 +29,19 @@ I2C_HandleTypeDef I2C_InitStructure; //global
 TIM_HandleTypeDef PWMTimer; //global
 
 bool RECORDING = false;
+
+/* Fatfs structure */
+FATFS FS;
+FIL fil;
+FRESULT fres;
+
+/* Size structure for FATFS */
+TM_FATFS_Size_t CardSize;
+ 
+/* Buffer variable */
+char buffer[100];
+
+void RecordLoop(void);
 
 
 extern "C" void SysTick_Handler(void)
@@ -55,9 +73,47 @@ int main(void)
 		
 		HAL_TIM_PWM_Start(&PWMTimer, TIM_CHANNEL_4);
 		
-		while (RECORDING)
-		{
+		int mounted = f_mount(&FS, "SD:", 1);
+		HAL_Delay(1);
+		
+		if (mounted == FR_OK) {
+			/* Try to open file */
+			HAL_Delay(1);
+			if ((fres = f_open(&fil, "SD:TELEMETRY2.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE)) == FR_OK) {
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+				/* Read SDCARD size */
+				TM_FATFS_GetDriveSize("SD:", &CardSize);
+            
+				/* Format string */
+				sprintf(buffer, "Total card size: %u kBytes\n", CardSize.Total);
+            
+				/* Write total card size to file */
+				//f_puts(buffer, &fil);
+            
+				/* Format string for free card size */
+				sprintf(buffer, "Free card size:  %u kBytes\n", CardSize.Free);
+            
+				/* Write free card size to file */
+				//f_puts(buffer, &fil);
+            
+				/* Close file */
+				
 			
+			while (RECORDING)
+			{
+				
+				uint16_t XA = lis_get_axis(X_AXIS);
+				uint16_t YA = lis_get_axis(Y_AXIS);
+				uint16_t ZA = lis_get_axis(Z_AXIS);
+				
+				sprintf(buffer, " %u, %u, %u,\n", XA, YA, ZA);
+				f_puts(buffer, &fil);
+				
+				HAL_Delay(25);
+			}
+				
+			f_close(&fil);
+			}
 		}
 		
 		HAL_TIM_PWM_Stop(&PWMTimer, TIM_CHANNEL_4);
@@ -67,8 +123,6 @@ int main(void)
 		HAL_GPIO_WritePin(LED_PORT, G_LED_PIN, GPIO_PIN_RESET);
 	}
 }
-
-
 
 
 void LED_INIT(void)
