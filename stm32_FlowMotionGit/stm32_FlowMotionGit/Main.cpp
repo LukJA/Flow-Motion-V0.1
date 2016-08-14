@@ -21,8 +21,19 @@ extern "C"
 void LED_INIT(void);
 TIM_HandleTypeDef PWMTimer; //global
 
+//structure for returning date and time
+typedef struct
+{
+	uint8_t date;
+	uint8_t month;
+	uint8_t year;
+	uint8_t hours;
+	uint8_t mins;
+	uint8_t secs;
+} dateTime;
+
 void RTC_INIT(void);
-uint8_t RTC_DateTime(void);
+dateTime RTC_DateTime(void);
 RTC_HandleTypeDef RTCconfig; // global
  
 void LIS_INIT(void);
@@ -84,6 +95,7 @@ int main(void)
 		
 			// Start recording light through hardware pwm
 			HAL_TIM_PWM_Start(&PWMTimer, TIM_CHANNEL_4);
+			
 		
 		
 			// Mount SD with hardware code "SD" in force mode
@@ -161,6 +173,26 @@ void RTC_INIT(void)
 	// Set RTC default values
 	HAL_RTC_SetTime(&RTCconfig, &time, RTC_FORMAT_BCD);
 	HAL_RTC_SetDate(&RTCconfig, &date, RTC_FORMAT_BCD);
+}
+
+dateTime RTC_DateTime(void)
+{
+	// get specified components and return
+	dateTime Ret;
+	RTC_TimeTypeDef time;
+	RTC_DateTypeDef date;
+	
+	HAL_RTC_GetTime(&RTCconfig, &time, RTC_FORMAT_BCD);
+	HAL_RTC_GetDate(&RTCconfig, &date, RTC_FORMAT_BCD);
+	
+	// select wanted data
+	Ret.date = date.Date; 
+	Ret.month = date.Month;
+	Ret.year = date.Year;
+	Ret.hours =	time.Hours; 
+	Ret.mins = time.Minutes; 
+	Ret.secs = time.Seconds;
+	return Ret;
 }
 
 void LED_INIT(void)
